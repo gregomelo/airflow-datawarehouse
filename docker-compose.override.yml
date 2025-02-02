@@ -1,0 +1,27 @@
+services:
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEFAULT_REGION=us-east-1
+      - DATA_DIR=/data/localstack
+    volumes:
+      - localstack_data:/data/localstack
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite
+    ports:
+      - "10000:10000"
+    volumes:
+      - ./azurite-data:/workspace
+
+volumes:
+  localstack_data:
+    name: airflow-datawarehouse_localstack_volume
+#  Naming azurite volume did no work well
+#  azurite_data:
+#    name: airflow-datawarehouse_azurite_volume
