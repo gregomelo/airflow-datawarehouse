@@ -6,3 +6,7 @@ logs/
 .venv
 airflow.db
 airflow.cfg
+
+# Docker volumes
+azurite_data/
+localstack_data/

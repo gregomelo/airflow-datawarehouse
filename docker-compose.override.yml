@@ -8,20 +8,28 @@ services:
       - SERVICES=s3
       - DEFAULT_REGION=us-east-1
       - DATA_DIR=/data/localstack
+      - LOCALSTACK_VOLUME_DIR=/data/localstack
     volumes:
       - localstack_data:/data/localstack
+      # Avid problems with anonymous volumes
+      - localstack_data:/var/lib/localstack
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: azurite
+    command: "azurite -l /data"
+    # Avoid problems with permisson on future
+    user: "${UID}:${GID}"
+    # Avid problems with anonymous volumes
+    environment:
+      - AZURITE_WORKSPACE=/data
     ports:
       - "10000:10000"
     volumes:
-      - ./azurite-data:/workspace
+      - azurite_data:/data
 
 volumes:
   localstack_data:
     name: airflow-datawarehouse_localstack_volume
-#  Naming azurite volume did no work well
-#  azurite_data:
-#    name: airflow-datawarehouse_azurite_volume
+  azurite_data:
+    name: airflow-datawarehouse_azurite_volume

@@ -181,3 +181,7 @@ airflow-webserver.pid
 webserver_config.py
 airflow.cfg
 airflow.db
+
+# Docker volumes
+azurite_data/
+localstack_data/
