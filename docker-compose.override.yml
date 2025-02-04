@@ -7,29 +7,37 @@ services:
     environment:
       - SERVICES=s3
       - DEFAULT_REGION=us-east-1
-      - DATA_DIR=/data/localstack
-      - LOCALSTACK_VOLUME_DIR=/data/localstack
+      - DATA_DIR=/var/lib/localstack  # Keep internal files separate
+      - LOCALSTACK_VOLUME_DIR=/var/lib/localstack
     volumes:
-      - localstack_data:/data/localstack
-      # Avid problems with anonymous volumes
+      # Persisting data and avoid anonymous volumes
+      # Internal LocalStack data
       - localstack_data:/var/lib/localstack
+      # Separate storage for application files
+      - localstack_storage:/data
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: azurite
-    command: "azurite -l /data"
-    # Avoid problems with permisson on future
-    user: "${UID}:${GID}"
-    # Avid problems with anonymous volumes
+    command: "azurite -l /var/lib/azurite"
+    user: "${UID}:${GID}"  # Run as your user to prevent permission issues
     environment:
-      - AZURITE_WORKSPACE=/data
+      - AZURITE_WORKSPACE=/var/lib/azurite
     ports:
       - "10000:10000"
     volumes:
-      - azurite_data:/data
+      # Persisting data and avoid anonymous volumes
+      # Internal Azurite data
+      - azurite_data:/var/lib/azurite
+      # Separate storage for application files
+      - azurite_storage:/data
 
 volumes:
   localstack_data:
-    name: airflow-datawarehouse_localstack_volume
+    name: airflow-datawarehouse_localstack_internal
+  localstack_storage:
+    name: airflow-datawarehouse_localstack_storage
   azurite_data:
-    name: airflow-datawarehouse_azurite_volume
+    name: airflow-datawarehouse_azurite_internal
+  azurite_storage:
+    name: airflow-datawarehouse_azurite_storage
