@@ -51,29 +51,30 @@ The Astronomer CLI is maintained with love by the Astronomer team. To report a b
 Setup Airflow Data Warehouse (draft)
 =======
 
-clone repository
+1. Clone the repository from GitHub:
+   ```bash
+   git clone https://github.com/gregomelo/airflow-datawarehouse.git
+   ```
 
-if you want to just see the project working, use the commands in bash:
+2. Start the Astro Airflow.
 
 ```
 astro dev start
 ```
 
+## New Dags
 
-if you want to dev new dags, just create new files ate dags
+If you want to dev new dags, you just need to create then at `dags/` folder and wait some instantes to see then at Airflow UI.
 
-if you want to dev new extractor or tools to use in dags
+## New Extractors or Tools
+
+If you want to dev new extractors or tools to use in dags, we recommended you to isolate your enverionments.
 
 1. Ensure you have [pyenv](https://github.com/pyenv/pyenv) and [Poetry](https://python-poetry.org/) installed on your system for dependency management.
 
 2. Ensure you have the python version 3.11.11 avaiable in your system using the command `pyenv versions`. If 3.11.11 is not listed, use the command `pyenv install 3.11.11`.
 
-3. Clone the repository from GitHub:
-   ```bash
-   git clone https://github.com/gregomelo/airflow-datawarehouse.git
-   ```
-
-4. Navigate to the cloned directory and install the dependencies using Poetry:
+3. Navigate to the cloned directory and install the dependencies using Poetry:
    ```bash
    cd airflow-datawarehouse
 
