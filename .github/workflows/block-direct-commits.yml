@@ -9,6 +9,9 @@ jobs:
   prevent-direct-commit:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4  # This ensures the repo is available
+
       - name: Check for direct commits
         run: |
           AUTHOR=$(git log -1 --pretty=format:'%an')
