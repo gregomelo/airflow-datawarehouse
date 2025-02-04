@@ -20,7 +20,6 @@ services:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: azurite
     command: "azurite -l /var/lib/azurite"
-    user: "${UID}:${GID}"  # Run as your user to prevent permission issues
     environment:
       - AZURITE_WORKSPACE=/var/lib/azurite
     ports:
