@@ -82,7 +82,7 @@ If you want to dev new extractors or tools to use in dags, we recommended you to
 
    poetry env use 3.11.11
 
-   poetry install --no-root
+   poetry install --no-root --with dev
 
    poetry lock --no-update
    ```
