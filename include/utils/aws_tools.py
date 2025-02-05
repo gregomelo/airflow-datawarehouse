@@ -48,7 +48,7 @@ class S3Client:
         )
 
     @staticmethod
-    def _load_env_vars() -> Dict[str, str | None]:
+    def _load_env_vars() -> Dict[str, str]:
         """
         Load and validate required environment variables.
 
@@ -62,14 +62,14 @@ class S3Client:
         SystemExit
             If any required environment variable is missing.
         """
-        required_vars: Dict[str, str | None] = {
-            "aws_access_key_id": os.getenv("AWS_ACCESS_KEY_ID"),
-            "aws_secret_access_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
+        required_vars: Dict[str, str] = {
+            "aws_access_key_id": os.getenv("AWS_ACCESS_KEY_ID", ""),
+            "aws_secret_access_key": os.getenv("AWS_SECRET_ACCESS_KEY", ""),
             "aws_default_region": os.getenv("AWS_REGION", "us-east-1"),
         }
 
         missing_vars: List[str] = [
-            key for key, value in required_vars.items() if value is None
+            key for key, value in required_vars.items() if value == ""
         ]
         if missing_vars:
             logger.error(
@@ -124,7 +124,6 @@ class S3Client:
         """
         try:
             file = self.s3.get_object(Bucket=self.s3_bucket, Key=s3_key)
-            logger.info(f"File downloaded successfully: {s3_key}")
             return file
         except NoCredentialsError:
             logger.error(
