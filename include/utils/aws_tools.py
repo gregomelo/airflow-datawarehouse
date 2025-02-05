@@ -31,7 +31,7 @@ class S3Client:
             Name of the S3 bucket to be used.
         """
         self._envs = self._load_env_vars()
-        self.endpoint_url = os.getenv("AWS_S3_ENDPOINT", "").strip() or None
+        self._endpoint_url = os.getenv("AWS_S3_ENDPOINT", "").strip() or None
         self.s3_bucket = s3_bucket
 
         self.s3 = boto3.client(
@@ -39,11 +39,11 @@ class S3Client:
             aws_access_key_id=self._envs["aws_access_key_id"],
             aws_secret_access_key=self._envs["aws_secret_access_key"],
             region_name=self._envs["aws_default_region"],
-            endpoint_url=self.endpoint_url,  # None = Real AWS, LocalStack if set
+            endpoint_url=self._endpoint_url,  # None = Real AWS, LocalStack if set
         )
 
         logger.info(
-            f"Connected to {'LocalStack' if self.endpoint_url else 'AWS'} "
+            f"Connected to {'LocalStack' if self._endpoint_url else 'AWS'} "
             f"S3 - Bucket: {self.s3_bucket}"
         )
 
