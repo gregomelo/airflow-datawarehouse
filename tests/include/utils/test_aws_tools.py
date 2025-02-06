@@ -102,7 +102,7 @@ class TestS3Client:
 
         file_content = s3_client.download_file(s3_key)
         assert file_content is not None
-        assert file_content == b"test data"  # Fix: Removed ["Body"].read()
+        assert file_content == b"test data"
 
     def test_download_file_not_found(self, s3_client: S3Client) -> None:
         """
