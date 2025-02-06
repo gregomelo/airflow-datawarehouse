@@ -7,7 +7,6 @@ file uploads, downloads, and listing objects.
 
 import os
 import sys
-from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -130,9 +129,8 @@ class S3Client:
             file_content = response["Body"].read()
 
             if local_path:
-                with open(local_path, "wb") as f:
-                    f.write(file_content)
-                logger.info(f"File downloaded and saved at: {local_path}")
+                with open(file=local_path, mode="wb") as download_file:
+                    download_file.write(file_content)
 
             return file_content
 
@@ -168,7 +166,6 @@ class S3Client:
             response = self.s3.list_objects_v2(Bucket=self.s3_bucket, Prefix=prefix)
             if "Contents" in response:
                 return response["Contents"]
-            logger.info("No objects found in the specified prefix.")
             return []
         except NoCredentialsError:
             logger.error(
@@ -178,22 +175,3 @@ class S3Client:
         except ClientError as e:
             logger.error(f"S3 list objects failed: {e}")
         return []
-
-
-# Example Usage:
-if __name__ == "__main__":
-    s3_bucket_test: str = os.getenv("AWS_S3_BUCKET", "test-bucket")
-    s3_client = S3Client(s3_bucket=s3_bucket_test)
-
-    # Example: Upload a simple text file
-    test_data = BytesIO(b"Hello, S3!")
-    s3_client.upload_file("example.txt", "test-folder")
-
-    # Example: List objects in a folder
-    objects = s3_client.list_objects("test-folder/")
-    logger.info(f"Objects in folder: {objects}")
-
-    # Example: Download a file
-    file_content = s3_client.download_file("test-folder/example.txt")
-    if file_content:
-        logger.info(f"File content: {file_content.decode()}")
