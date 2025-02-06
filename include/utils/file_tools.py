@@ -6,8 +6,9 @@ using the `tempfile.TemporaryDirectory` class.
 """
 
 from os import listdir
+from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List
+from typing import List, Union
 
 from loguru import logger
 
@@ -49,23 +50,23 @@ def delete_temp_folder(temp_folder: TemporaryDirectory) -> None:
     logger.info(f"Remove temporary folder {temp_folder.name}")
 
 
-def list_temp_folder(temp_folder: TemporaryDirectory) -> List[str]:
+def list_temp_folder(temp_folder: Union[TemporaryDirectory, Path]) -> List[str]:
     """
     List files in a temporary directory.
 
-    This function list all files in a temporary directory.
+    This function lists all files in a temporary directory.
 
     Parameters
     ----------
-    temp_folder : TemporaryDirectory
-        The temporary directory instance to be deleted.
+    temp_folder : Union[TemporaryDirectory, Path]
+        The temporary directory instance or a Path object.
 
     Returns
     -------
-    listdir
+    listdir : List[str]
         A list with all files in the directory.
     """
-    return listdir(temp_folder.name)
+    return listdir(str(temp_folder))  # Ensure it's a string path
 
 
 if __name__ == "__main__":
