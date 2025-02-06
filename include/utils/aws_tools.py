@@ -1,13 +1,15 @@
 """
 Module for handling AWS services.
 
-This module provides functions to interact with AWS services.
+This module provides functions to interact with AWS S3, including
+file uploads, downloads, and listing objects.
 """
 
 import os
 import sys
 from io import BytesIO
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -42,11 +44,6 @@ class S3Client:
             endpoint_url=self._endpoint_url,  # None = Real AWS, LocalStack if set
         )
 
-        logger.info(
-            f"Connected to {'LocalStack' if self._endpoint_url else 'AWS'} "
-            f"S3 - Bucket: {self.s3_bucket}"
-        )
-
     @staticmethod
     def _load_env_vars() -> Dict[str, str]:
         """
@@ -54,7 +51,7 @@ class S3Client:
 
         Returns
         -------
-        dict
+        Dict[str, str]
             Dictionary containing AWS credentials and region.
 
         Raises
@@ -69,7 +66,7 @@ class S3Client:
         }
 
         missing_vars: List[str] = [
-            key for key, value in required_vars.items() if value == ""
+            key for key, value in required_vars.items() if not value
         ]
         if missing_vars:
             logger.error(
@@ -79,16 +76,16 @@ class S3Client:
 
         return required_vars
 
-    def upload_file(self, data: BytesIO, s3_key: str) -> bool:
+    def upload_file(self, upload_file_path: Union[str, Path], load_folder: str) -> bool:
         """
-        Upload a file-like object to S3.
+        Upload a file to S3.
 
         Parameters
         ----------
-        data : BytesIO
-            The data to upload.
-        s3_key : str
-            The S3 object key (destination path in S3).
+        upload_file_path : Union[str, Path]
+            Path of the file to be uploaded.
+        load_folder : str
+            Destination folder in S3 where the file will be stored.
 
         Returns
         -------
@@ -96,8 +93,10 @@ class S3Client:
             True if upload succeeds, False otherwise.
         """
         try:
-            self.s3.put_object(Body=data.getvalue(), Bucket=self.s3_bucket, Key=s3_key)
-            logger.info(f"File uploaded successfully: {s3_key}")
+            filename: str = Path(upload_file_path).name
+            s3_key: str = f"{load_folder}/{filename}"
+            with open(file=upload_file_path, mode="rb") as data:
+                self.s3.put_object(Body=data, Bucket=self.s3_bucket, Key=s3_key)
             return True
         except NoCredentialsError:
             logger.error(
@@ -108,26 +107,38 @@ class S3Client:
             logger.error(f"S3 upload failed: {e}")
         return False
 
-    def download_file(self, s3_key: str) -> Optional[dict]:
+    def download_file(
+        self, s3_key: str, local_path: Optional[str] = None
+    ) -> Optional[bytes]:
         """
-        Download a file from S3.
+        Download a file from S3 and optionally save it locally.
 
         Parameters
         ----------
         s3_key : str
             The S3 object key (path in S3).
+        local_path : str, optional
+            The local file path where the file should be saved.
 
         Returns
         -------
-        dict or None
-            The S3 object data if successful, None otherwise.
+        Optional[bytes]
+            The file content in bytes if successful, None otherwise.
         """
         try:
-            file = self.s3.get_object(Bucket=self.s3_bucket, Key=s3_key)
-            return file
+            response = self.s3.get_object(Bucket=self.s3_bucket, Key=s3_key)
+            file_content = response["Body"].read()
+
+            if local_path:
+                with open(local_path, "wb") as f:
+                    f.write(file_content)
+                logger.info(f"File downloaded and saved at: {local_path}")
+
+            return file_content
+
         except NoCredentialsError:
             logger.error(
-                "AWS credentials not found."
+                "AWS credentials not found. "
                 "Check your environment variables or AWS config."
             )
         except ClientError as e:
@@ -135,9 +146,10 @@ class S3Client:
                 logger.error(f"File not found in S3: {s3_key}")
             else:
                 logger.error(f"S3 download failed: {e}")
+
         return None
 
-    def list_objects(self, prefix: str) -> List[dict]:
+    def list_objects(self, prefix: str) -> List[Dict[str, Any]]:
         """
         List objects in S3 under a specific prefix.
 
@@ -148,8 +160,9 @@ class S3Client:
 
         Returns
         -------
-        list of dict
-            List of S3 objects, or an empty list if none found.
+        List[Dict[str, Any]]
+            List of dictionaries containing S3 object metadata.
+            Returns an empty list if no objects are found.
         """
         try:
             response = self.s3.list_objects_v2(Bucket=self.s3_bucket, Prefix=prefix)
@@ -159,7 +172,7 @@ class S3Client:
             return []
         except NoCredentialsError:
             logger.error(
-                "AWS credentials not found."
+                "AWS credentials not found. "
                 "Check your environment variables or AWS config."
             )
         except ClientError as e:
@@ -174,13 +187,13 @@ if __name__ == "__main__":
 
     # Example: Upload a simple text file
     test_data = BytesIO(b"Hello, S3!")
-    s3_client.upload_file(test_data, "test-folder/hello.txt")
+    s3_client.upload_file("example.txt", "test-folder")
 
     # Example: List objects in a folder
     objects = s3_client.list_objects("test-folder/")
     logger.info(f"Objects in folder: {objects}")
 
     # Example: Download a file
-    file_content = s3_client.download_file("test-folder/hello.txt")
+    file_content = s3_client.download_file("test-folder/example.txt")
     if file_content:
-        logger.info(f"File content: {file_content['Body'].read().decode()}")
+        logger.info(f"File content: {file_content.decode()}")

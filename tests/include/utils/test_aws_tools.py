@@ -1,4 +1,5 @@
-from io import BytesIO
+import tempfile
+from pathlib import Path
 from typing import Generator
 
 import boto3
@@ -69,15 +70,24 @@ class TestS3Client:
 
         Ensures that the file is correctly uploaded and can be retrieved.
         """
-        data: BytesIO = BytesIO(b"test data")
-        s3_key: str = "test-folder/test-file.txt"
 
-        assert s3_client.upload_file(data, s3_key) is True
+        # Ensure the bucket exists in the mocked S3 service
+        s3_client.s3.create_bucket(Bucket=s3_client.s3_bucket)
 
-        # Verify file exists in S3
-        s3: boto3.client = boto3.client("s3")
-        response = s3.get_object(Bucket=s3_client.s3_bucket, Key=s3_key)
-        assert response["Body"].read() == b"test data"
+        # Create a temporary file with test data
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(b"test data")
+            temp_file.close()
+
+            # Upload file to S3
+            assert s3_client.upload_file(temp_file.name, "test-folder") is True
+
+            # Extract only the filename (not the full path)
+            s3_key: str = f"test-folder/{Path(temp_file.name).name}"
+
+            # Verify file exists in S3 using the correct S3 client instance
+            response = s3_client.s3.get_object(Bucket=s3_client.s3_bucket, Key=s3_key)
+            assert response["Body"].read() == b"test data"
 
     def test_download_file(self, s3_client: S3Client) -> None:
         """
@@ -90,9 +100,9 @@ class TestS3Client:
             Bucket=s3_client.s3_bucket, Key=s3_key, Body=b"test data"
         )
 
-        file = s3_client.download_file(s3_key)
-        assert file is not None
-        assert file["Body"].read() == b"test data"
+        file_content = s3_client.download_file(s3_key)
+        assert file_content is not None
+        assert file_content == b"test data"  # Fix: Removed ["Body"].read()
 
     def test_download_file_not_found(self, s3_client: S3Client) -> None:
         """
