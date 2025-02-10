@@ -1,0 +1,44 @@
+name: CI - Astro DAGs & Mocked Storage Clients
+
+on:
+  pull_request:
+    branches:
+      - master  # Your branch is master, not main
+
+jobs:
+  astro-tests:
+    name: Run Astro Tests (DAGs & Clients)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Astro CLI
+        run: |
+          curl -sSL https://install.astronomer.io | sudo bash
+
+      - name: Start Astro environment
+        run: astro dev start
+
+      - name: Run Tests Inside Astro (Scheduler Container)
+        run: |
+          SCHEDULER_CONTAINER=$(docker ps --filter "name=scheduler" --format "{{.ID}}")
+          docker exec $SCHEDULER_CONTAINER pytest -vv --tb=long
+        continue-on-error: false  # Make the workflow fail if pytest fails
+
+      - name: Upload Test Results (Artifacts)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: pytest_results.log
+
+      - name: Stop Astro environment
+        if: always()
+        run: astro dev stop
