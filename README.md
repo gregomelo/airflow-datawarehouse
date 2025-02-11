@@ -56,7 +56,13 @@ Setup Airflow Data Warehouse (draft)
    git clone https://github.com/gregomelo/airflow-datawarehouse.git
    ```
 
-2. Start the Astro Airflow.
+2. Assure you have Astro CLI install in your system.
+
+   For this, try the comamand `astro` at your terminal.
+
+   If an error is raised, install Astro: `curl -sSL https://install.astronomer.io | sudo bash`
+
+3. Start the Astro Airflow.
 
 ```
 astro dev start
@@ -86,3 +92,24 @@ If you want to dev new extractors or tools to use in dags, we recommended you to
 
    poetry lock --no-update
    ```
+
+
+## Local Tests with Pytest
+
+There are two ways to test this project:
+
+1. Running only the test container.
+
+   For this, try `astro dev pytest`.
+
+      For more details about this option look [Astro documentation](https://www.astronomer.io/docs/astro/cli/astro-dev-pytest/).
+
+2. Running all services.
+
+   ```bash
+   astro dev start
+   astro dev bash
+   pytest
+   ````
+
+   This code will open a terminal on scheduler container and you can run your tests, include DAG tests.
