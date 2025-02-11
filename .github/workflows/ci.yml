@@ -3,7 +3,7 @@ name: CI - Astro DAGs & Mocked Storage Clients
 on:
   pull_request:
     branches:
-      - master  # Your branch is master, not main
+      - master
 
 jobs:
   astro-tests:
@@ -31,13 +31,6 @@ jobs:
           SCHEDULER_CONTAINER=$(docker ps --filter "name=scheduler" --format "{{.ID}}")
           docker exec $SCHEDULER_CONTAINER pytest -vv --tb=long
         continue-on-error: false  # Make the workflow fail if pytest fails
-
-      - name: Upload Test Results (Artifacts)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-results
-          path: pytest_results.log
 
       - name: Stop Astro environment
         if: always()
