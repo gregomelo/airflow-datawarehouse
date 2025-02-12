@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urljoin
 
 from httpx import Client
 
@@ -104,7 +105,7 @@ class APIExtractor(ABC):
         The session is configured with the API endpoint and default headers.
         """
         headers = self._get_headers()
-        self._session = Client(base_url=self._endpoint, headers=headers)
+        self._session = Client(headers=headers)
 
     def _close_session(self) -> None:
         """
@@ -141,8 +142,11 @@ class APIExtractor(ABC):
         # Merge static parameters with dynamic pagination parameters
         query_params = {**self._params_query, **kwargs}
 
+        # Ensure proper URL concatenation
+        full_url = urljoin(self._endpoint, self._relative_url)
+
         try:
-            response = self._session.get(url=self._relative_url, params=query_params)
+            response = self._session.get(url=full_url, params=query_params)
             response.raise_for_status()
             return response.json()
         except Exception as e:
