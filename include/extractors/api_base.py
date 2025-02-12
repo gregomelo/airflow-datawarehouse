@@ -26,13 +26,13 @@ class APIExtractor(ABC):
 
     Attributes
     ----------
-    _source_name : str
+    source_name : str
         Static attribute for the source name (must be defined in subclasses).
     _endpoint : str
         Static attribute for the API endpoint (must be defined in subclasses).
     _relative_url : str
         The specific API path for the request.
-    _source_surname : str
+    source_surname : str
         A sanitized version of `_relative_url` used in filenames.
     _params_query : Dict
         Query parameters to be sent in the API request.
@@ -50,7 +50,7 @@ class APIExtractor(ABC):
     ```
     """
 
-    _source_name: str
+    source_name: str
     _endpoint: str
 
     def __init__(self, relative_url: str, params_query: Dict, load_to: Path | str):
@@ -67,7 +67,7 @@ class APIExtractor(ABC):
             Destination path for storing fetched data.
         """
         self._relative_url: str = relative_url
-        self._source_surname: str = relative_url.replace("/", "_")
+        self.source_surname: str = relative_url.replace("/", "_")
         self._params_query: Dict = params_query
         self._load_to: Path | str = load_to
         self._session: Optional[Client] = None
@@ -241,8 +241,8 @@ class APIExtractor(ABC):
         """
         filename = (
             f"{str(load_to)}/"
-            f"{self._source_name}_"
-            f"{self._source_surname}_"
+            f"{self.source_name}_"
+            f"{self.source_surname}_"
             f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}_"
             f"{page:03d}.json"
         )
