@@ -243,7 +243,7 @@ class APIExtractor(ABC):
             f"{str(load_to)}/"
             f"{self._source_name}_"
             f"{self._source_surname}_"
-            f"{datetime.now(timezone.utc).isoformat()}_"
+            f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}_"
             f"{page:03d}.json"
         )
         try:
