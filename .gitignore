@@ -180,3 +180,7 @@ airflow-webserver.pid
 webserver_config.py
 airflow.cfg
 airflow.db
+
+# Temp project objects
+.tmp/*
+pipeline_test.py
