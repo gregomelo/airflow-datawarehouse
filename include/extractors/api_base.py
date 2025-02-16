@@ -104,7 +104,7 @@ class APIExtractor(ABC):
 
         The session is configured with the API endpoint and default headers.
         """
-        headers = self._get_headers()
+        headers: Dict[str, str] = self._get_headers()
         self._session = Client(headers=headers)
 
     def _close_session(self) -> None:
@@ -140,7 +140,7 @@ class APIExtractor(ABC):
             raise RuntimeError("Session has not been initialized.")
 
         # Merge static parameters with dynamic pagination parameters
-        query_params = {**self._params_query, **kwargs}
+        query_params: Dict = {**self._params_query, **kwargs}
 
         # Ensure proper URL concatenation
         full_url = urljoin(self._endpoint, self._relative_url)
@@ -239,7 +239,7 @@ class APIExtractor(ABC):
         Exception
             If an error occurs while writing the file.
         """
-        filename = (
+        filename: str = (
             f"{str(load_to)}/"
             f"{self.source_name}_"
             f"{self.source_surname}_"
