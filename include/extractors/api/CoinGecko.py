@@ -33,8 +33,8 @@ class CoinGeckoBase(APIExtractor):
         Base URL of the CoinGecko API.
     """
 
-    source_name = "CoinGecko"
-    _endpoint = "https://api.coingecko.com/api/v3/"
+    source_name: str = "CoinGecko"
+    _endpoint: str = "https://api.coingecko.com/api/v3/"
 
 
 class CoinGeckoCoinsList(CoinGeckoBase):
@@ -48,7 +48,7 @@ class CoinGeckoCoinsList(CoinGeckoBase):
         Relative URL of the 'coins/list' endpoint.
     """
 
-    _relative_url = "coins/list"
+    _relative_url: str = "coins/list"
 
     def __init__(self, params_query: Dict[str, Any], load_to: Path | str):
         """Initialize the extractor for the 'coins/list' endpoint.
