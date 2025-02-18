@@ -13,7 +13,8 @@ from typing import Any, Dict, List, Optional, Union
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 from dotenv import load_dotenv
-from loguru import logger
+
+from .log_tools import logger
 
 # Load environment variables from a .env file
 load_dotenv()

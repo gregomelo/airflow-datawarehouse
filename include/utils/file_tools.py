@@ -10,7 +10,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import List, Union
 
-from loguru import logger
+from .log_tools import logger
 
 
 def create_temp_folder(temp_name: str) -> TemporaryDirectory:
@@ -74,6 +74,6 @@ if __name__ == "__main__":
 
     input("Press Enter to delete the temporary folder...")
 
-    print(list_temp_folder(my_temp_folder))
+    print(list_temp_folder(my_temp_folder.name))
 
     delete_temp_folder(my_temp_folder)

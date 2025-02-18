@@ -13,7 +13,8 @@ from typing import Dict, List, Optional, Union
 from azure.core.exceptions import AzureError, ClientAuthenticationError
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
-from loguru import logger
+
+from .log_tools import logger
 
 # Load environment variables from a .env file
 load_dotenv()
