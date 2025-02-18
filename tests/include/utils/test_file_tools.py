@@ -28,7 +28,7 @@ class TestFileTools:
         """
         temp_folder: TemporaryDirectory = create_temp_folder("test")
         assert os.path.exists(temp_folder.name), "Temporary directory should exist."
-        delete_temp_folder(temp_folder)
+        delete_temp_folder(temp_folder.name)
 
     def test_delete_temp_folder(self) -> None:
         """
@@ -38,7 +38,7 @@ class TestFileTools:
         """
         temp_folder: TemporaryDirectory = create_temp_folder("delete_test")
         temp_path: str = temp_folder.name
-        delete_temp_folder(temp_folder)
+        delete_temp_folder(temp_path)
         assert not os.path.exists(temp_path), "Temporary directory should be removed."
 
     def test_list_temp_folder_empty(self, tmp_path: Path) -> None:

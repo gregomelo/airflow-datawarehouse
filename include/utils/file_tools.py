@@ -7,6 +7,7 @@ using the `tempfile.TemporaryDirectory` class.
 
 from os import listdir
 from pathlib import Path
+from shutil import rmtree
 from tempfile import TemporaryDirectory
 from typing import List, Union
 
@@ -34,7 +35,7 @@ def create_temp_folder(temp_name: str) -> TemporaryDirectory:
     return temp_folder
 
 
-def delete_temp_folder(temp_folder: TemporaryDirectory) -> None:
+def delete_temp_folder(temp_folder: str) -> None:
     """
     Delete a temporary directory.
 
@@ -43,11 +44,11 @@ def delete_temp_folder(temp_folder: TemporaryDirectory) -> None:
 
     Parameters
     ----------
-    temp_folder : TemporaryDirectory
-        The temporary directory instance to be deleted.
+    temp_folder : str
+        The temporary directory to be deleted.
     """
-    temp_folder.cleanup()
-    logger.info(f"Remove temporary folder {temp_folder.name}")
+    rmtree(temp_folder, ignore_errors=True)
+    logger.info(f"Remove temporary folder {temp_folder}")
 
 
 def list_temp_folder(temp_folder: Union[TemporaryDirectory, Path]) -> List[str]:
@@ -76,4 +77,4 @@ if __name__ == "__main__":
 
     print(list_temp_folder(my_temp_folder.name))
 
-    delete_temp_folder(my_temp_folder)
+    delete_temp_folder(my_temp_folder.name)
