@@ -51,7 +51,7 @@ def delete_temp_folder(temp_folder: str) -> None:
     logger.info(f"Remove temporary folder {temp_folder}")
 
 
-def list_temp_folder(temp_folder: Union[TemporaryDirectory, Path]) -> List[str]:
+def list_temp_folder(temp_folder: Union[TemporaryDirectory, Path, str]) -> List[str]:
     """
     List files in a temporary directory.
 
