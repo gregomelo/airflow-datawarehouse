@@ -3,6 +3,10 @@ x-environment: &aws_env
   AWS_SECRET_ACCESS_KEY: test
   AWS_DEFAULT_REGION: us-east-1
 
+networks:
+  airflow:
+    driver: bridge
+
 services:
   localstack:
     image: localstack/localstack
@@ -13,6 +17,8 @@ services:
       <<: *aws_env # Inherit global AWS env variables
       SERVICES: s3
     # - PERSISTENCE=1 This only works for Pro Image
+    networks:
+      - airflow
     volumes:
       # Avoid anonymous containers
       - localstack_data:/var/lib/localstack
@@ -25,6 +31,8 @@ services:
       - "10000:10000"
       - "10001:10001"
       - "10002:10002"
+    networks:
+      - airflow
     volumes:
       # Persisting data and avoid anonymous volumes
       # Internal Azurite metadata
@@ -40,6 +48,8 @@ services:
     depends_on:
       - localstack
     entrypoint: ["/bin/sh", "-c"]
+    networks:
+      - airflow
     command:
       - |
         echo "Waiting for LocalStack to start..."
