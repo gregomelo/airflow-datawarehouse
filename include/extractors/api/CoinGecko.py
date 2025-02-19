@@ -50,15 +50,7 @@ class CoinGeckoCoinsList(CoinGeckoBase):
     _relative_url: str = "coins/list"
 
     def __init__(self):
-        """Initialize the extractor for the 'coins/list' endpoint.
-
-        Parameters
-        ----------
-        params_query : Dict[str, Any]
-            Query parameters to be sent in the API request.
-        load_to : Path | str
-            Destination path or filename where the extracted data will be saved.
-        """
+        """Initialize the extractor for the 'coins/list' endpoint."""
         super().__init__(self._relative_url)
 
     def _is_last_page(self, data: Any) -> bool:
