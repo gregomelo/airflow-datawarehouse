@@ -53,7 +53,7 @@ class APIExtractor(ABC):
     source_name: str
     _endpoint: str
 
-    def __init__(self, relative_url: str, params_query: Dict, load_to: Path | str):
+    def __init__(self, relative_url: str):
         """
         Initialize the API extractor with request parameters and output settings.
 
@@ -61,18 +61,12 @@ class APIExtractor(ABC):
         ----------
         relative_url : str
             The relative path of the API endpoint.
-        params_query : Dict
-            Dictionary containing default query parameters.
-        load_to : Path | str
-            Destination path for storing fetched data.
         """
         self._relative_url: str = relative_url
         self.source_surname: str = relative_url.replace("/", "_")
-        self._params_query: Dict = params_query
-        self._load_to: Path | str = load_to
         self._session: Optional[Client] = None
 
-    def start(self) -> None:
+    def start(self, params_query: Dict, load_to: Path | str) -> None:
         """
         Start the data extraction process by iterating over paginated results.
 
@@ -80,7 +74,16 @@ class APIExtractor(ABC):
         stores the results in the specified output location.
 
         Ensures that the session is properly closed, even if an error occurs.
+
+        Parameters
+        ----------
+        params_query : Dict
+            Dictionary containing default query parameters.
+        load_to : Path | str
+            Destination path for storing fetched data.
         """
+        self._params_query: Dict = params_query
+        self._load_to: Path | str = load_to
         self._open_session()
         try:
             self._fetch_data()

@@ -50,28 +50,24 @@ class TestCoinGeckoCoinsList:
         return {"some_param": "test_value"}
 
     @pytest.fixture
-    def extractor(
-        self, mock_params: Dict[str, Any], tmp_path: Path
-    ) -> CoinGeckoCoinsList:
+    def extractor(self) -> CoinGeckoCoinsList:
         """
         Fixture providing an instance of CoinGeckoCoinsList.
-
-        Parameters
-        ----------
-        mock_params : dict
-            Query parameters for API requests.
-        tmp_path : Path
-            Temporary directory for storing output files.
 
         Returns
         -------
         CoinGeckoCoinsList
             An initialized instance of the extractor.
         """
-        return CoinGeckoCoinsList(params_query=mock_params, load_to=tmp_path)
+        return CoinGeckoCoinsList()
 
     def test_get_data(
-        self, mocker, extractor: CoinGeckoCoinsList, mock_api_response: Dict[str, Any]
+        self,
+        mocker,
+        extractor: CoinGeckoCoinsList,
+        mock_api_response: Dict[str, Any],
+        mock_params: Dict[str, Any],
+        tmp_path: Path,
     ) -> None:
         """
         Test `_get_data()` method to ensure it fetches API data correctly.
@@ -97,10 +93,13 @@ class TestCoinGeckoCoinsList:
         )
 
         extractor._session = mock_session
+
+        extractor.start(params_query=mock_params, load_to=tmp_path)
+
         response = extractor._get_data()
 
         assert response == mock_api_response, "API response should match mock data."
-        mock_session.get.assert_called_once()
+        assert mock_session.get.call_count >= 1
 
     def test_is_last_page(
         self, extractor: CoinGeckoCoinsList, mock_api_response: Dict[str, Any]

@@ -13,7 +13,6 @@ CoinGeckoCoinsList
 
 """
 
-from pathlib import Path
 from typing import Any, Dict
 
 from include.extractors.api_base import APIExtractor
@@ -50,7 +49,7 @@ class CoinGeckoCoinsList(CoinGeckoBase):
 
     _relative_url: str = "coins/list"
 
-    def __init__(self, params_query: Dict[str, Any], load_to: Path | str):
+    def __init__(self):
         """Initialize the extractor for the 'coins/list' endpoint.
 
         Parameters
@@ -60,7 +59,7 @@ class CoinGeckoCoinsList(CoinGeckoBase):
         load_to : Path | str
             Destination path or filename where the extracted data will be saved.
         """
-        super().__init__(self._relative_url, params_query, load_to)
+        super().__init__(self._relative_url)
 
     def _is_last_page(self, data: Any) -> bool:
         """Determine if the current page is the last one.
