@@ -13,11 +13,12 @@ def azure_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Mock Azure credentials for testing.
 
-    This fixture sets an environment variable with a dummy Azure connection string.
+    Sets an environment variable with a dummy Azure connection string.
     """
     monkeypatch.setenv(
         "AZURE_STORAGE_CONNECTION_STRING",
-        "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test;EndpointSuffix=core.windows.net",
+        "DefaultEndpointsProtocol=https;AccountName=test;"
+        "AccountKey=test;EndpointSuffix=core.windows.net",
     )
 
 
@@ -26,12 +27,12 @@ def azure_mock(
     azure_credentials: None, mocker
 ) -> Generator[BlobServiceClient, None, None]:
     """
-    Start a mocked Azure Blob Storage service.
+    Mock an Azure Blob Storage service.
 
     Yields
     ------
     BlobServiceClient
-        Mocked Blob service client.
+        A mocked Azure Blob service client.
     """
     mock_blob_service_client = mocker.Mock(spec=BlobServiceClient)
     yield mock_blob_service_client
@@ -40,19 +41,19 @@ def azure_mock(
 @pytest.fixture
 def azure_client(azure_mock: BlobServiceClient, mocker) -> AzureBlobClient:
     """
-    Create an instance of AzureBlobClient using the mocked Azure service.
+    Create a mocked instance of AzureBlobClient.
 
     Parameters
     ----------
     azure_mock : BlobServiceClient
-        Mocked Blob service client fixture.
+        The mocked Blob service client fixture.
     mocker : pytest-mock.MockerFixture
-        Fixture for creating mocks.
+        The pytest-mock fixture for creating mocks.
 
     Returns
     -------
     AzureBlobClient
-        Instance of AzureBlobClient for testing.
+        An instance of AzureBlobClient for testing.
     """
     mock_container_client = mocker.Mock()
     mock_blob_service_client = mocker.Mock(spec=BlobServiceClient)
@@ -73,7 +74,8 @@ class TestAzureBlobClient:
         """
         Test uploading a file to Azure Blob Storage.
 
-        Ensures that the file is correctly uploaded and handled.
+        Mocks the file upload process and verifies that the upload method
+        is called correctly.
         """
         mock_blob_client = mocker.Mock()
         mocker.patch.object(
@@ -86,14 +88,15 @@ class TestAzureBlobClient:
             temp_file.write(b"test data")
             temp_file.close()
 
-            assert azure_client.upload_file(temp_file.name, "test-folder") is True
+            assert azure_client.upload_file(temp_file.name, "test-folder") is None
             mock_blob_client.upload_blob.assert_called_once()
 
     def test_download_file(self, azure_client: AzureBlobClient, mocker) -> None:
         """
         Test downloading an existing file from Azure Blob Storage.
 
-        Ensures the file content matches what was uploaded.
+        Mocks the file download process and verifies that the returned
+        file content matches the expected data.
         """
         mock_blob_client = mocker.Mock()
         mock_blob_client.download_blob.return_value.readall.return_value = b"test data"
@@ -110,9 +113,10 @@ class TestAzureBlobClient:
         self, azure_client: AzureBlobClient, mocker
     ) -> None:
         """
-        Test downloading a non-existing file from Azure Blob Storage.
+        Test handling of a missing file in Azure Blob Storage.
 
-        Ensures None is returned when trying to download a missing file.
+        Mocks a scenario where a requested file does not exist, ensuring
+        that a RuntimeError is raised with the expected error message.
         """
         mock_blob_client = mocker.Mock()
         mock_blob_client.download_blob.side_effect = ResourceNotFoundError(
@@ -124,13 +128,17 @@ class TestAzureBlobClient:
             return_value=mock_blob_client,
         )
 
-        assert azure_client.download_file("non-existent-file.txt") is None
+        with pytest.raises(
+            RuntimeError, match="Azure Blob operation failed: Blob not found"
+        ):
+            azure_client.download_file("non-existent-file.txt")
 
     def test_list_objects(self, azure_client: AzureBlobClient, mocker) -> None:
         """
-        Test listing objects in Azure Blob Storage with a specific prefix.
+        Test listing objects in Azure Blob Storage with a prefix.
 
-        Ensures the correct number of objects are returned under a given prefix.
+        Mocks the listing of blobs under a specific prefix and verifies
+        that the correct number of objects is returned.
         """
         mock_container_client = mocker.Mock()
         mock_container_client.list_blobs.return_value = [
@@ -151,9 +159,10 @@ class TestAzureBlobClient:
         self, azure_client: AzureBlobClient, mocker
     ) -> None:
         """
-        Test listing objects in Azure Blob Storage when no files match the prefix.
+        Test listing objects when no matching files exist.
 
-        Ensures an empty list is returned when no objects exist under the prefix.
+        Mocks a scenario where no files exist under a given prefix and
+        ensures that an empty list is returned.
         """
         mock_container_client = mocker.Mock()
         mock_container_client.list_blobs.return_value = []
@@ -167,9 +176,10 @@ class TestAzureBlobClient:
 
     def test_azure_client_initialization(self, azure_client: AzureBlobClient) -> None:
         """
-        Test AzureBlobClient initialization.
+        Test the initialization of AzureBlobClient.
 
-        Ensures the AzureBlobClient is initialized correctly with the expected attributes.
+        Verifies that the AzureBlobClient is initialized with the expected
+        attributes.
         """
         assert isinstance(azure_client, AzureBlobClient)
         assert azure_client.blob_container == "test-container"
