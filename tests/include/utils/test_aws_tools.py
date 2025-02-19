@@ -80,7 +80,7 @@ class TestS3Client:
             temp_file.close()
 
             # Upload file to S3
-            assert s3_client.upload_file(temp_file.name, "test-folder") is True
+            assert s3_client.upload_file(temp_file.name, "test-folder") is None
 
             # Extract only the filename (not the full path)
             s3_key: str = f"test-folder/{Path(temp_file.name).name}"
@@ -110,7 +110,10 @@ class TestS3Client:
 
         Ensures None is returned when trying to download a missing file.
         """
-        assert s3_client.download_file("non-existent-file.txt") is None
+        with pytest.raises(
+            FileNotFoundError, match="The specified file was not found in S3."
+        ):
+            s3_client.download_file("non-existent-file.txt")
 
     def test_list_objects(self, s3_client: S3Client) -> None:
         """
