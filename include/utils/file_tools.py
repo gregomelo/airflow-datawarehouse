@@ -70,6 +70,27 @@ def list_temp_folder(temp_folder: Union[TemporaryDirectory, Path, str]) -> List[
     return listdir(str(temp_folder))  # Ensure it's a string path
 
 
+def storage_path(layer: str, source_name: str, source_surname: str) -> str:
+    """
+    Generate a storage path based on the provided layer, source name, and source surname.
+
+    Parameters
+    ----------
+    layer : str
+        The storage layer (e.g., "bronze", "silver", "gold").
+    source_name : str
+        The main name of the data source.
+    source_surname : str
+        The secondary name of the data source.
+
+    Returns
+    -------
+    str
+        The formatted storage path in the format "{layer}/{source_name}/{source_surname}".
+    """
+    return f"{layer}/{source_name}/{source_surname}"
+
+
 if __name__ == "__main__":
     my_temp_folder = create_temp_folder("teste")
 

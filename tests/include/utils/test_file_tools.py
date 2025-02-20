@@ -10,10 +10,13 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
+
 from include.utils.file_tools import (
     create_temp_folder,
     delete_temp_folder,
     list_temp_folder,
+    storage_path,
 )
 
 
@@ -63,3 +66,33 @@ class TestFileTools:
         assert sorted(listed_files) == sorted(
             filenames
         ), "List should match created files."
+
+    @pytest.mark.parametrize(
+        "layer, source_name, source_surname, expected",
+        [
+            ("bronze", "sales", "transactions", "bronze/sales/transactions"),
+            ("silver", "customers", "data", "silver/customers/data"),
+            ("gold", "finance", "reports", "gold/finance/reports"),
+            ("raw", "logs", "server", "raw/logs/server"),
+            ("processed", "events", "clicks", "processed/events/clicks"),
+        ],
+    )
+    def test_storage_path(
+        self, layer: str, source_name: str, source_surname: str, expected: str
+    ) -> None:
+        """
+        Test that the storage_path function correctly formats the storage path.
+
+        Parameters
+        ----------
+        layer : str
+            The storage layer.
+        source_name : str
+            The name of the data source.
+        source_surname : str
+            The secondary name of the data source.
+        expected : str
+            The expected output path.
+        """
+        result = storage_path(layer, source_name, source_surname)
+        assert result == expected, f"Expected '{expected}', but got '{result}'."
