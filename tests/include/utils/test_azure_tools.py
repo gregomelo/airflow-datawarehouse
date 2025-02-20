@@ -1,5 +1,6 @@
 import tempfile
-from typing import Generator
+from pathlib import Path
+from typing import Generator, Union
 
 import pytest
 from azure.core.exceptions import ResourceNotFoundError
@@ -90,6 +91,34 @@ class TestAzureBlobClient:
 
             assert azure_client.upload_file(temp_file.name, "test-folder") is None
             mock_blob_client.upload_blob.assert_called_once()
+
+    def test_upload_files(self, azure_client: AzureBlobClient, mocker) -> None:
+        """
+        Test uploading multiple files to Azure Blob Storage.
+
+        Mocks the file upload process and verifies that the upload method
+        is called correctly for each file in the provided list.
+        """
+        mock_blob_client = mocker.Mock()
+        mocker.patch.object(
+            azure_client._blob_service_client,
+            "get_blob_client",
+            return_value=mock_blob_client,
+        )
+
+        with (
+            tempfile.NamedTemporaryFile(delete=False) as temp_file1,
+            tempfile.NamedTemporaryFile(delete=False) as temp_file2,
+        ):
+            temp_file1.write(b"test data 1")
+            temp_file1.close()
+            temp_file2.write(b"test data 2")
+            temp_file2.close()
+
+            file_list: list[Union[str, Path]] = [temp_file1.name, temp_file2.name]
+            azure_client.upload_files(file_list, "test-folder")
+
+            assert mock_blob_client.upload_blob.call_count == len(file_list)
 
     def test_download_file(self, azure_client: AzureBlobClient, mocker) -> None:
         """

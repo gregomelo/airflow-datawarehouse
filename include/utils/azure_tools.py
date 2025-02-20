@@ -13,6 +13,8 @@ from typing import Dict, List, Optional, Union
 from azure.core.exceptions import AzureError, ClientAuthenticationError
 from azure.storage.blob import BlobServiceClient
 
+from .log_tools import logger
+
 
 class AzureBlobClient:
     """Client for interacting with Azure Blob Storage or Azurite."""
@@ -94,6 +96,14 @@ class AzureBlobClient:
 
         with open(upload_file_path, "rb") as data:
             blob_client.upload_blob(data, overwrite=True)
+
+    def upload_files(
+        self, upload_list_file_path: List[Union[str, Path]], load_folder: str
+    ) -> None:
+        """Upload files to Azure Blob Storage."""
+        for file in upload_list_file_path:
+            self.upload_file(file, load_folder)
+            logger.info(f"Upload {file} @ {load_folder}")
 
     @_handle_azure_errors
     def download_file(self, blob_path: str, local_path: Optional[str] = None) -> bytes:
