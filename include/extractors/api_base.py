@@ -205,14 +205,17 @@ class APIExtractor(ABC):
         - Determines pagination and fetches subsequent pages if necessary.
         """
         page: int = 1
-        pagination_params: Dict[str, Any] = {}  # Empty on first request
+        pagination_params: Dict[str, Any] = {}
+        timestamp_extract: str = (
+            f"{datetime.now(timezone.utc).strftime('%d-%m-%yT%H_%M_%S')}"
+        )
 
         while True:
             data = self._get_data(**pagination_params)
             if not data:
                 break
 
-            self._load_data(data, self._load_to, page)
+            self._load_data(data, self._load_to, timestamp_extract, page)
 
             if self._is_last_page(data):
                 break
@@ -221,7 +224,9 @@ class APIExtractor(ABC):
             pagination_params = self._get_next_pagination(data)
             page += 1
 
-    def _load_data(self, data: Dict, load_to: Path | str, page: int) -> None:
+    def _load_data(
+        self, data: Dict, load_to: Path | str, timestamp_extract: str, page: int
+    ) -> None:
         """
         Save fetched API data to a file.
 
@@ -234,6 +239,8 @@ class APIExtractor(ABC):
             The JSON data retrieved from the API.
         load_to : Path | str
             The destination directory or file path.
+        timestamp_extract : str
+            The extration data timestamp.
         page : int
             The page number (used for file naming).
 
@@ -246,7 +253,7 @@ class APIExtractor(ABC):
             f"{str(load_to)}/"
             f"{self.source_name}_"
             f"{self.source_surname}_"
-            f"{datetime.now(timezone.utc).strftime('%d-%m-%yT%H_%M_%S')}_"
+            f"{timestamp_extract}_"
             f"{page:03d}.json"
         )
         try:
