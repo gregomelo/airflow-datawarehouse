@@ -1,27 +1,33 @@
-x-environment: &aws_env
-  AWS_ACCESS_KEY_ID: test
-  AWS_SECRET_ACCESS_KEY: test
-  AWS_DEFAULT_REGION: us-east-1
+# Localstack only allow data persistence for paided subscriptions.
+# Considering this, we are removing this stack from the project.
+# x-environment: &aws_env
+#   AWS_ACCESS_KEY_ID: test
+#   AWS_SECRET_ACCESS_KEY: test
+#   AWS_DEFAULT_REGION: us-east-1
+x-environment: &azure_env
+  AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
 
 networks:
   airflow:
     driver: bridge
 
 services:
-  localstack:
-    image: localstack/localstack
-    container_name: localstack
-    ports:
-      - "4566:4566"
-    environment:
-      <<: *aws_env # Inherit global AWS env variables
-      SERVICES: s3
-    # - PERSISTENCE=1 This only works for Pro Image
-    networks:
-      - airflow
-    volumes:
-      # Avoid anonymous containers
-      - localstack_data:/var/lib/localstack
+  # localstack:
+  # Localstack only allow data persistence for paided subscriptions.
+  # Considering this, we are removing this stack from the project.
+  #   image: localstack/localstack
+  #   container_name: localstack
+  #   ports:
+  #     - "4566:4566"
+  #   environment:
+  #     <<: *aws_env # Inherit global AWS env variables
+  #     SERVICES: s3
+  #   # - PERSISTENCE=1 This only works for Pro Image
+  #   networks:
+  #     - airflow
+  #   volumes:
+  #     # Avoid anonymous containers
+  #     - localstack_data:/var/lib/localstack
 
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
@@ -40,27 +46,60 @@ services:
       # Separate storage for application files (if needed)
       - azurite_storage:/storage
 
-  setup-s3:
-    image: amazon/aws-cli
-    container_name: setup-s3
-    environment:
-      <<: *aws_env # Inherit global AWS env variables
+  # setup-s3:
+  # Localstack only allow data persistence for paided subscriptions.
+  # Considering this, we are removing this stack from the project.
+  #   image: amazon/aws-cli
+  #   container_name: setup-s3
+  #   environment:
+  #     <<: *aws_env # Inherit global AWS env variables
+  #   depends_on:
+  #     - localstack
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   networks:
+  #     - airflow
+  #   command:
+  #     - |
+  #       echo "Waiting for LocalStack to start..."
+  #       sleep 5
+  #       echo "Creating S3 bucket..."
+  #       aws --endpoint-url=http://localstack:4566 s3 mb s3://test-bucket
+  #       echo "S3 bucket created."
+
+  setup-azurite:
+    image: mcr.microsoft.com/azure-cli
+    container_name: setup-azurite
     depends_on:
-      - localstack
-    entrypoint: ["/bin/sh", "-c"]
+      - azurite
+    environment:
+      <<: *azure_env # Inherit global Azure env variables
     networks:
       - airflow
+    entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        echo "Waiting for LocalStack to start..."
-        sleep 5
-        echo "Creating S3 bucket..."
-        aws --endpoint-url=http://localstack:4566 s3 mb s3://test-bucket
-        echo "S3 bucket created."
+        sleep 5;
+        echo "Creating Azure Blob container for the project...";
+
+        output=$(az storage container create --name "airflow-datawarehouse" --connection-string "${AZURE_STORAGE_CONNECTION_STRING}");
+
+        if echo "$$output" | grep -q '"created": true'; then
+            echo "Container created."
+        else
+            echo "Container already exists."
+        fi
+
+        echo "";
+
+        echo "List blob containers...";
+        az storage container list --connection-string "${AZURE_STORAGE_CONNECTION_STRING}" --output table;
+
 
 volumes:
-  localstack_data:
-    name: airflow-datawarehouse_localstack_internal
+  # Localstack only allow data persistence for paided subscriptions.
+  # Considering this, we are removing this stack from the project.
+  # localstack_data:
+  #   name: airflow-datawarehouse_localstack_internal
   azurite_data:
     name: airflow-datawarehouse_azurite_internal
   azurite_storage:
