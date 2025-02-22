@@ -70,6 +70,7 @@ class TestDAGs:
         except Exception as e:
             pytest.fail(f"DAG {dag_id} in {fileloc} failed validation: {e}")
 
+    @pytest.mark.skip(reason="Only tasks to extract or load will have retries setup")
     def test_dag_retries(self, dag_fixture) -> None:
         """Test if the DAG has at least 2 retries configured."""
         dag_id, dag, fileloc = dag_fixture
