@@ -1,24 +1,25 @@
 """
-Test suite for CoinGeckoCoinsList extractor.
+Test suite for CoinGeckoCoinsList extractors.
 
-This module contains unit tests for the CoinGeckoCoinsList class,
+This module contains unit tests for the CoinGeckoCoinsList classes,
 ensuring correct API interaction, pagination logic, and data storage.
 
 Tests use pytest and mock dependencies to simulate API responses.
 """
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
 
-from include.extractors.api.CoinGecko import CoinGeckoCoinsList
+from include.extractors.coingecko.coinslist import CoinGeckoCoinsListExtractor
 
 
 class TestCoinGeckoCoinsList:
-    """Test suite for the CoinGeckoCoinsList extractor."""
+    """Test suite for the CoinGeckoCoinsListExtractor."""
 
     @pytest.fixture
     def mock_api_response(self) -> Dict[str, Any]:
@@ -50,7 +51,7 @@ class TestCoinGeckoCoinsList:
         return {"some_param": "test_value"}
 
     @pytest.fixture
-    def extractor(self) -> CoinGeckoCoinsList:
+    def extractor(self) -> CoinGeckoCoinsListExtractor:
         """
         Fixture providing an instance of CoinGeckoCoinsList.
 
@@ -59,12 +60,12 @@ class TestCoinGeckoCoinsList:
         CoinGeckoCoinsList
             An initialized instance of the extractor.
         """
-        return CoinGeckoCoinsList()
+        return CoinGeckoCoinsListExtractor()
 
     def test_get_data(
         self,
         mocker,
-        extractor: CoinGeckoCoinsList,
+        extractor: CoinGeckoCoinsListExtractor,
         mock_api_response: Dict[str, Any],
         mock_params: Dict[str, Any],
         tmp_path: Path,
@@ -102,7 +103,7 @@ class TestCoinGeckoCoinsList:
         assert mock_session.get.call_count >= 1
 
     def test_is_last_page(
-        self, extractor: CoinGeckoCoinsList, mock_api_response: Dict[str, Any]
+        self, extractor: CoinGeckoCoinsListExtractor, mock_api_response: Dict[str, Any]
     ) -> None:
         """
         Test `_is_last_page()` method to ensure correct pagination behavior.
@@ -122,7 +123,7 @@ class TestCoinGeckoCoinsList:
         ), "Endpoint should not paginate."
 
     def test_get_next_pagination(
-        self, extractor: CoinGeckoCoinsList, mock_api_response: Dict[str, Any]
+        self, extractor: CoinGeckoCoinsListExtractor, mock_api_response: Dict[str, Any]
     ) -> None:
         """
         Test `_get_next_pagination()` method to ensure correct pagination parameters.
@@ -143,7 +144,7 @@ class TestCoinGeckoCoinsList:
 
     def test_load_data(
         self,
-        extractor: CoinGeckoCoinsList,
+        extractor: CoinGeckoCoinsListExtractor,
         mock_api_response: Dict[str, Any],
         tmp_path: Path,
     ) -> None:
@@ -162,7 +163,10 @@ class TestCoinGeckoCoinsList:
         tmp_path : Path
             Temporary directory for storing output files.
         """
-        extractor._load_data(mock_api_response, tmp_path, page=1)
+        timestamp_extract: str = (
+            f"{datetime.now(timezone.utc).strftime('%d-%m-%yT%H_%M_%S')}"
+        )
+        extractor._load_data(mock_api_response, tmp_path, timestamp_extract, page=1)
 
         # Verify file creation
         saved_files = list(tmp_path.iterdir())

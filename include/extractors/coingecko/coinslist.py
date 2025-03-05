@@ -15,28 +15,10 @@ CoinGeckoCoinsList
 
 from typing import Any, Dict
 
-from include.extractors.api_base import APIExtractor
+from include.extractors.coingecko.coingecko_base import CoinGeckoBaseExtractor
 
 
-class CoinGeckoBase(APIExtractor):
-    """Base class for CoinGecko API extractors.
-
-    This class serves as a foundation for specific extractors interacting
-    with the CoinGecko API.
-
-    Attributes
-    ----------
-    _source_name : str
-        Name of the data source.
-    _endpoint : str
-        Base URL of the CoinGecko API.
-    """
-
-    source_name: str = "CoinGecko"
-    _endpoint: str = "https://api.coingecko.com/api/v3/"
-
-
-class CoinGeckoCoinsList(CoinGeckoBase):
+class CoinGeckoCoinsListExtractor(CoinGeckoBaseExtractor):
     """Extractor for the CoinGecko 'coins/list' endpoint.
 
     This class retrieves the list of all available coins from the CoinGecko API.
