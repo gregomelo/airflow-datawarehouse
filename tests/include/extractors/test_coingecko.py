@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from include.extractors.coingecko.coinslist import CoinGeckoCoinsListExtractor
+from include.extractors.coingecko.coins_list import CoinGeckoCoinsListExtractor
 
 
 class TestCoinGeckoCoinsList:
