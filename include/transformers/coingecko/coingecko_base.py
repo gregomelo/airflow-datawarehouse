@@ -21,4 +21,4 @@ class CoinGeckoTranformerBase(TransformerBase):
         The name of the data source, set as "CoinGecko".
     """
 
-    source_name: str = "CoinGecko"
+    source_name: str = "coingecko"
