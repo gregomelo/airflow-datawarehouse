@@ -12,10 +12,10 @@ Classes
 from pandera import DataFrameModel
 
 from include.contracts.coingecko.coins_list import CoinGeckoCoinsListSchema
-from include.transformers.transformer_base import TransformerBase
+from include.transformers.coingecko.coingecko_base import CoinGeckoTranformerBase
 
 
-class CoinGeckCoinsListBronze(TransformerBase):
+class CoinGeckoCoinsListBronze(CoinGeckoTranformerBase):
     """
     Transformer for CoinGecko's coins list from the bronze to the silver layer.
 
@@ -25,8 +25,6 @@ class CoinGeckCoinsListBronze(TransformerBase):
 
     Attributes
     ----------
-    source_name : str
-        The name of the data source, set as "CoinGeck".
     source_sourname : str
         The specific source within CoinGecko, set as "coins_list".
     layer_from : str
@@ -37,7 +35,6 @@ class CoinGeckCoinsListBronze(TransformerBase):
         The schema used for data validation, based on `CoinGeckoCoinsListSchema`.
     """
 
-    source_name: str = "CoinGeck"
     source_sourname: str = "coins_list"
     layer_from: str = "bronze"
     layer_to: str = "silver"

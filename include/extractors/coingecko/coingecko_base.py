@@ -30,5 +30,5 @@ class CoinGeckoBaseExtractor(APIExtractor):
         Base URL of the CoinGecko API.
     """
 
-    source_name: str = "CoinGecko"
+    source_name: str = "coingecko"
     _endpoint: str = "https://api.coingecko.com/api/v3/"
