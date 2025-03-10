@@ -27,7 +27,7 @@ class TransformerBase(ABC):
     """
 
     source_name: str
-    source_sourname: str
+    source_surname: str
     layer_from: str
     layer_to: str
     data_contract: DataFrameModel
@@ -114,14 +114,14 @@ class TransformerBase(ABC):
             f"{self.load_from}/"
             f"{self.layer_to}_"
             f"{self.source_name}_"
-            f"{self.source_sourname}.parquet"
+            f"{self.source_surname}.parquet"
         )
 
         invalid_data_path: str = (
             f"{self.load_from}/"
             f"{self.layer_to}_"
             f"{self.source_name}_"
-            f"{self.source_sourname}_garbage.parquet"
+            f"{self.source_surname}_garbage.parquet"
         )
 
         df_valid_data.to_parquet(valid_data_path, index=False)

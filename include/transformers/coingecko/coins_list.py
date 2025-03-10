@@ -21,7 +21,7 @@ class CoinGeckoCoinsListBronze(CoinGeckoTranformerBase):
 
     Attributes
     ----------
-    source_sourname : str
+    source_surname : str
         The specific source within CoinGecko, set as "coins_list".
     layer_from : str
         The origin layer of the data, set as "bronze".
@@ -31,7 +31,7 @@ class CoinGeckoCoinsListBronze(CoinGeckoTranformerBase):
         The schema used for data validation, based on `CoinGeckoCoinsListSchema`.
     """
 
-    source_sourname: str = "coins_list"
+    source_surname: str = "coins_list"
     layer_from: str = "bronze"
     layer_to: str = "silver"
     data_contract: DataFrameModel = CoinGeckoCoinsListSchema
