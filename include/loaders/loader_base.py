@@ -2,8 +2,10 @@
 Base module for data loading.
 
 This module defines the `LoaderSilverBase` abstract class, which provides a framework
-for ingesting, validating, and loading transformed data. Subclasses must implement
-data extraction logic to customize the transformation and loading process.
+for ingesting, validating, and loading transformed data.
+
+Subclasses must implement data extraction logic to customize the transformation
+and loading process.
 """
 
 import os
@@ -24,11 +26,11 @@ class LoaderSilverBase(ABC):
     """
     Base class for loading data from the Bronze to Silver layer using DuckDB.
 
-    This class is responsible for:
+    This class handles:
     - Loading incremental data from the Bronze layer.
-    - Fetching existing data from the Silver layer.
-    - Merging both datasets.
-    - Saving the final dataset back to the Silver layer.
+    - Fetching existing Silver data from Azure Blob Storage.
+    - Merging the new and existing datasets.
+    - Writing the final dataset back to the Silver layer.
 
     Attributes
     ----------
@@ -45,8 +47,14 @@ class LoaderSilverBase(ABC):
         """
         Initialize the LoaderSilverBase class.
 
-        This method sets up the Azure Storage connection by installing
-        and loading the Azure extension in DuckDB and creating a secret.
+        This method sets up a connection to Azure Blob Storage for data storage
+        and retrieval. It installs and loads the DuckDB Azure extension and creates
+        a secret for authentication.
+
+        Raises
+        ------
+        duckdb.IOException
+            If the Azure extension fails to install or load.
         """
         env_var = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
@@ -61,31 +69,39 @@ class LoaderSilverBase(ABC):
         """  # nosec
         )
 
-    def start(self, load_from: Union[str, Path], gargabe: bool, container: str) -> None:
+    def start(self, load_from: Union[str, Path], garbage: bool, container: str) -> str:
         """
         Execute the data loading process.
 
-        This method reads incremental data, fetches existing Silver data,
-        merges both, and writes the final dataset back to the Silver layer.
+        This method:
+        1. Reads incremental data from the Bronze layer.
+        2. Fetches existing Silver data from Azure storage (if available).
+        3. Merges the incremental and existing datasets.
+        4. Writes the final dataset back to the Silver layer.
 
         Parameters
         ----------
         load_from : Union[str, Path]
-            Path to the Bronze data source.
-        gargabe : bool
-            Whether the dataset includes garbage data.
+            Path to the directory containing the Bronze dataset.
+        garbage : bool
+            Whether the dataset includes garbage (invalid) data.
         container : str
-            Name of the Azure container where the Silver data is stored.
+            Name of the Azure Blob Storage container where the Silver data is stored.
+
+        Returns
+        -------
+        str
+            The file path where the final Silver dataset is stored.
         """
         # Defining filename parameters
         self._load_from: Union[str, Path] = str(load_from)
-        self._gargabe: bool = gargabe
+        self._garbage: bool = garbage
         self._container: str = container
 
         self._file_name: str = f"silver_{self.source_name}_{self.source_surname}"
 
-        if self._gargabe:
-            self._file_name += "_gargabe.parquet"
+        if self._garbage:
+            self._file_name += "_garbage.parquet"
         else:
             self._file_name += ".parquet"
 
@@ -97,16 +113,23 @@ class LoaderSilverBase(ABC):
         df_final = self._fetch_data(df_incremental, df_exists)
         self._load_data(df_final)
 
+        return self._file_from
+
     def _get_incremental_data(self) -> duckdb.DuckDBPyRelation:
         """
-        Retrieve the incremental data from the Bronze layer.
+        Retrieve incremental data from the Bronze layer.
 
-        This method reads a Parquet file from the given path.
+        Reads a Parquet file containing the new data to be merged into Silver.
 
         Returns
         -------
         duckdb.DuckDBPyRelation
             A DuckDB relation containing the incremental data.
+
+        Raises
+        ------
+        duckdb.IOException
+            If the Parquet file cannot be read (e.g., missing or corrupted).
         """
         sql_incremental = f"SELECT * FROM read_parquet('{self._file_from}')"  # nosec
         df_incremental = duckdb.sql(sql_incremental)
@@ -114,14 +137,20 @@ class LoaderSilverBase(ABC):
 
     def _get_exists_data(self) -> Union[duckdb.DuckDBPyRelation, None]:
         """
-        Retrieve existing data from the Silver layer.
+        Retrieve existing Silver data from Azure storage.
 
-        If the data does not exist (e.g., first execution), it returns None.
+        If the dataset does not exist (e.g., on the first execution), returns `None`.
 
         Returns
         -------
         Union[duckdb.DuckDBPyRelation, None]
-            A DuckDB relation containing the existing Silver data, or None if unavailable.
+            - A DuckDB relation containing the existing Silver dataset.
+            - `None` if no previous data is found.
+
+        Raises
+        ------
+        duckdb.IOException
+            If the file cannot be accessed or read.
         """
         file_exists: str = (
             f"az://{self._container}/"
@@ -134,7 +163,7 @@ class LoaderSilverBase(ABC):
             df_exists = duckdb.sql(sql_exists)
             return df_exists
         except duckdb.IOException:
-            # This exception exists to deal with the first load
+            # This exception handles cases where no Silver file exists yet
             return None
 
     def _fetch_data(
@@ -145,19 +174,19 @@ class LoaderSilverBase(ABC):
         """
         Merge incremental data with existing Silver data.
 
-        If existing data is available, it performs a UNION ALL operation.
+        If existing Silver data is available, it appends new data using `UNION ALL`.
 
         Parameters
         ----------
         df_incremental : duckdb.DuckDBPyRelation
-            The newly extracted incremental data.
+            The newly extracted incremental dataset.
         df_exists : Union[duckdb.DuckDBPyRelation, None]
-            The existing Silver data or None if it's the first execution.
+            The existing Silver dataset, or `None` if it's the first execution.
 
         Returns
         -------
         duckdb.DuckDBPyRelation
-            The final merged dataset to be written to the Silver layer.
+            The merged dataset to be written to the Silver layer.
         """
         if df_exists:
             df_final = duckdb.sql(
@@ -170,12 +199,19 @@ class LoaderSilverBase(ABC):
 
     def _load_data(self, df_final: duckdb.DuckDBPyRelation) -> None:
         """
-        Write the final dataset back to the Silver layer.
+        Write the final merged dataset to the Silver layer.
+
+        Saves the transformed data as a Parquet file.
 
         Parameters
         ----------
         df_final : duckdb.DuckDBPyRelation
-            The final merged dataset.
+            The final dataset to be stored.
+
+        Raises
+        ------
+        duckdb.IOException
+            If the dataset cannot be written to the destination path.
         """
         sql_load: str = (
             f"COPY df_final TO '{self._file_from}' (FORMAT parquet);"  # nosec
