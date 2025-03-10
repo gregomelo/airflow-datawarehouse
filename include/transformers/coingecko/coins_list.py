@@ -3,10 +3,6 @@ CoinGecko Coins List Bronze Transformer.
 
 This module defines a transformer that processes CoinGecko's coins list
 from the bronze layer to the silver layer in the data pipeline.
-
-Classes
--------
-- CoinGeckCoinsListBronze : Extracts, transforms, and loads CoinGecko coins list data.
 """
 
 from pandera import DataFrameModel
