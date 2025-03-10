@@ -23,4 +23,4 @@ class CoinGeckoBaseCoinsListSilverLoader(CoinGeckoBaseSilverLoader):
         The specific dataset identifier, set to "coins_list".
     """
 
-    source_sourname: str = "coins_list"
+    source_surname: str = "coins_list"
