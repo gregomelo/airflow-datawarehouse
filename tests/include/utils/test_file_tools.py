@@ -75,6 +75,8 @@ class TestFileTools:
             ("gold", "finance", "reports", "gold/finance/reports"),
             ("raw", "logs", "server", "raw/logs/server"),
             ("processed", "events", "clicks", "processed/events/clicks"),
+            ("raw", "logs", None, "raw/logs"),
+            ("processed", "events", None, "processed/events"),
         ],
     )
     def test_storage_path(

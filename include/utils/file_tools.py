@@ -70,7 +70,7 @@ def list_temp_folder(temp_folder: Union[TemporaryDirectory, Path, str]) -> List[
     return listdir(str(temp_folder))  # Ensure it's a string path
 
 
-def storage_path(layer: str, source_name: str, source_surname: str) -> str:
+def storage_path(layer: str, source_name: str, source_surname: str | None) -> str:
     """
     Generate a storage path based on the provided layer, source name, and source surname.
 
@@ -79,16 +79,20 @@ def storage_path(layer: str, source_name: str, source_surname: str) -> str:
     layer : str
         The storage layer (e.g., "bronze", "silver", "gold").
     source_name : str
-        The main name of the data source.
-    source_surname : str
-        The secondary name of the data source.
+        The primary name of the data source.
+    source_surname : str or None
+        The secondary name of the data source. If None, it is omitted from the path.
 
     Returns
     -------
     str
-        The formatted storage path in the format "{layer}/{source_name}/{source_surname}".
+        The formatted storage path. If `source_surname` is provided, the format is:
+        ``"{layer}/{source_name}/{source_surname}"``. Otherwise,
+        it is ``"{layer}/{source_name}"``.
     """
-    return f"{layer}/{source_name}/{source_surname}"
+    if source_surname:
+        return f"{layer}/{source_name}/{source_surname}"
+    return f"{layer}/{source_name}"
 
 
 if __name__ == "__main__":
