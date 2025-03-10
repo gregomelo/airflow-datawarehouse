@@ -83,3 +83,12 @@ class TestDAGs:
         """Test if the DAG has at least one tag."""
         dag_id, dag, fileloc = dag_fixture
         assert dag.tags, f"{dag_id} in {fileloc} has no tags"
+
+    def test_dag_has_display_name(self, dag_fixture) -> None:
+        """Test if the DAG has a valid 'dag_display_name' attribute."""
+        dag_id, dag, fileloc = dag_fixture
+        display_name = getattr(dag, "dag_display_name", None)
+
+        assert (
+            isinstance(display_name, str) and display_name.strip()
+        ), f"DAG {dag_id} in {fileloc} must have a valid 'dag_display_name'."
