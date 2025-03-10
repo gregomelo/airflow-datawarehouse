@@ -1,5 +1,5 @@
 """
-Test suite for data transformers.
+Test suite for data pipeline ETL.
 
 This module contains integration tests for data transformation classes,
 ensuring the correct processing of raw input data into structured formats.
@@ -13,6 +13,7 @@ Validations include:
 - Proper creation of expected output files.
 - Schema and structural integrity of transformed data.
 - Handling of edge cases and missing values.
+- Loading data to silver layer.
 
 Current transformers tested:
 - CoinGecko CoinsList
@@ -24,16 +25,21 @@ the appropriate class and test cases.
 import json
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Tuple
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
-from include.transformers.coingecko.coins_list import CoinGeckCoinsListBronze
+from include.loaders.coingecko.coins_list import CoinGeckoBaseCoinsListSilverLoader
+from include.loaders.loader_base import LoaderSilverBase
+from include.transformers.coingecko.coins_list import CoinGeckoCoinsListBronze
+from include.transformers.transformer_base import TransformerBase
 
 # Define transformers and their test cases
 TRANSFORMERS_TEST_CASES: Dict[str, Dict[str, Any]] = {
-    "CoinGeckCoinsListBronze": {
-        "transformer": CoinGeckCoinsListBronze,
+    "CoinGeckCoinsList": {
+        "transformer": CoinGeckoCoinsListBronze,
+        "loader_silver": CoinGeckoBaseCoinsListSilverLoader,
         "test_cases": [
             (
                 "valid_invalid",
@@ -101,7 +107,7 @@ TRANSFORMERS_TEST_CASES: Dict[str, Dict[str, Any]] = {
 )
 def transformer_with_data(
     request: pytest.FixtureRequest, tmp_path: Path
-) -> Generator[Tuple[CoinGeckCoinsListBronze, Path, str], None, None]:
+) -> Generator[Tuple[TransformerBase, LoaderSilverBase, Path, str], None, None]:
     """
     Fixture to match each transformer with its respective test cases.
 
@@ -117,8 +123,9 @@ def transformer_with_data(
 
     Yields
     ------
-    Tuple[CoinGeckCoinsListBronze, Path, str]
-        The instantiated transformer, the temporary path, and the test case name.
+    Tuple[TransformerBase, LoaderSilverBase, Path, str]
+        The instantiated transformer, instantiated loader, the temporary path,
+        and the test case name.
     """
     transformer_name: str
     test_case_name: str
@@ -128,6 +135,7 @@ def transformer_with_data(
 
     # Instantiate the transformer
     transformer = TRANSFORMERS_TEST_CASES[transformer_name]["transformer"]()
+    loader_silver = TRANSFORMERS_TEST_CASES[transformer_name]["loader_silver"]()
 
     # Create a temporary input file
     file_path: Path = (
@@ -136,11 +144,11 @@ def transformer_with_data(
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(test_case_data, f)
 
-    yield transformer, tmp_path, test_case_name
+    yield transformer, loader_silver, tmp_path, test_case_name
 
 
 def test_transformer_integration(
-    transformer_with_data: Tuple[CoinGeckCoinsListBronze, Path, str],
+    transformer_with_data: Tuple[TransformerBase, LoaderSilverBase, Path, str],
 ) -> None:
     """
     Test transformers end-to-end using dynamically assigned test cases.
@@ -150,26 +158,27 @@ def test_transformer_integration(
 
     Parameters
     ----------
-    transformer_with_data : Tuple[CoinGeckCoinsListBronze, Path, str]
-        The instantiated transformer, the temporary path, and the test case name.
+    transformer_with_data : Tuple[TransformerBase, LoaderSilverBase, Path, str]
+        The instantiated transformer, The instantiated loader, the temporary path,
+        and the test case name.
 
     Raises
     ------
     AssertionError
         If the expected output files are not created or if data validation fails.
     """
-    transformer, tmp_path, test_case_name = transformer_with_data
+    transformer, loader_silver, tmp_path, test_case_name = transformer_with_data
 
     # Run the transformer pipeline
     transformer.start(tmp_path)
 
     # Expected output files
     valid_file: Path = tmp_path / (
-        f"silver_{transformer.source_name}_{transformer.source_sourname}.parquet"
+        f"silver_{transformer.source_name}_{transformer.source_surname}.parquet"
     )
     invalid_file: Path = tmp_path / (
         f"silver_{transformer.source_name}_"
-        f"{transformer.source_sourname}_garbage.parquet"
+        f"{transformer.source_surname}_garbage.parquet"
     )
 
     # Assert that output files are created
@@ -195,3 +204,37 @@ def test_transformer_integration(
             not df_invalid.empty
         ), f"Invalid data should not be empty for {test_case_name}"
         assert "id" in df_invalid.columns, "Invalid data should have 'id' column"
+
+    # Transformer and loaders as pairs
+    assert (
+        loader_silver.source_name == transformer.source_name
+    ), "Loader source_name should match transformer source_name"
+    assert (
+        loader_silver.source_surname == transformer.source_surname
+    ), "Loader source_surname should match transformer source_surname"
+
+    # Ensure the loader_silver call all methods
+    with (
+        patch.object(loader_silver, "_get_incremental_data") as mock_get_incremental,
+        patch.object(loader_silver, "_get_exists_data") as mock_get_exists,
+        patch.object(loader_silver, "_fetch_data") as mock_fetch,
+        patch.object(loader_silver, "_load_data") as mock_load,
+    ):
+
+        # Set return values for methods
+        mock_get_incremental.return_value = "mock_incremental_data"
+        mock_get_exists.return_value = "mock_existing_data"
+        mock_fetch.return_value = "mock_final_data"
+
+        # Execute loader
+        loader_silver.start(
+            load_from=tmp_path, gargabe=False, container="test-container"
+        )
+
+        # Assert each internal method is called once
+        mock_get_incremental.assert_called_once()
+        mock_get_exists.assert_called_once()
+        mock_fetch.assert_called_once_with(
+            "mock_incremental_data", "mock_existing_data"
+        )
+        mock_load.assert_called_once_with("mock_final_data")

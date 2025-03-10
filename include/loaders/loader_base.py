@@ -54,7 +54,7 @@ class LoaderSilverBase(ABC):
         duckdb.sql("INSTALL azure; LOAD azure;")
         duckdb.sql(
             f"""
-            CREATE SECRET secret1 (
+            CREATE OR REPLACE SECRET secret1 (
                 TYPE azure,
                 CONNECTION_STRING '{env_var}'
             );
