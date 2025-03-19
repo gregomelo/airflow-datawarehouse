@@ -9,7 +9,7 @@ and loading process.
 """
 
 import os
-from abc import ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Union
 
@@ -17,6 +17,7 @@ import duckdb
 from dotenv import load_dotenv
 
 from include.utils.file_tools import storage_path
+from include.utils.log_tools import logger
 
 # Load environment variables
 load_dotenv(override=True)
@@ -30,7 +31,6 @@ class LoaderSilverBase(ABC):
     - Loading incremental data from the Bronze layer.
     - Fetching existing Silver data from Azure Blob Storage.
     - Merging the new and existing datasets.
-    - Writing the final dataset back to the Silver layer.
 
     Attributes
     ----------
@@ -50,6 +50,8 @@ class LoaderSilverBase(ABC):
         This method sets up a connection to Azure Blob Storage for data storage
         and retrieval. It installs and loads the DuckDB Azure extension and creates
         a secret for authentication.
+
+        Subclasses must define `source_name` and `source_surname` attributes.
 
         Raises
         ------
@@ -76,22 +78,21 @@ class LoaderSilverBase(ABC):
         This method:
         1. Reads incremental data from the Bronze layer.
         2. Fetches existing Silver data from Azure storage (if available).
-        3. Merges the incremental and existing datasets.
-        4. Writes the final dataset back to the Silver layer.
+        3. Merges the incremental and existing datasets and stores the result.
 
         Parameters
         ----------
         load_from : Union[str, Path]
             Path to the directory containing the Bronze dataset.
         garbage : bool
-            Whether the dataset includes garbage (invalid) data.
+            Whether the dataset includes invalid data.
         container : str
             Name of the Azure Blob Storage container where the Silver data is stored.
 
         Returns
         -------
         str
-            The file path where the final Silver dataset is stored.
+            The full path where the final Silver dataset is stored.
         """
         # Defining filename parameters
         self._load_from: Union[str, Path] = str(load_from)
@@ -139,7 +140,8 @@ class LoaderSilverBase(ABC):
         """
         Retrieve existing Silver data from Azure storage.
 
-        If the dataset does not exist (e.g., on the first execution), returns `None`.
+        If the dataset is not found (e.g., on the first execution), logs a message
+        and returns `None`.
 
         Returns
         -------
@@ -150,11 +152,11 @@ class LoaderSilverBase(ABC):
         Raises
         ------
         duckdb.IOException
-            If the file cannot be accessed or read.
+            If the file cannot be accessed or read due to corruption or permissions.
         """
         file_exists: str = (
             f"az://{self._container}/"
-            f"{storage_path('silver', self.source_name, self.source_surname)}"
+            f"{storage_path('silver', self.source_name, None)}/"
             f"{self._file_name}"
         )
 
@@ -164,6 +166,7 @@ class LoaderSilverBase(ABC):
             return df_exists
         except duckdb.IOException:
             # This exception handles cases where no Silver file exists yet
+            logger.info(f"Silver parquet file ('{file_exists} does not exist.')")
             return None
 
     def _fetch_data(
@@ -215,5 +218,181 @@ class LoaderSilverBase(ABC):
         """
         sql_load: str = (
             f"COPY df_final TO '{self._file_from}' (FORMAT parquet);"  # nosec
+        )
+        duckdb.sql(sql_load)
+
+
+class LoaderGoldBase(ABC):
+    """
+    Base class for loading data from the Silver to Gold layer using DuckDB.
+
+    This class handles:
+    - Query Silver data from Azure Blob Storage.
+    - Create Gold data parquet file.
+
+    Attributes
+    ----------
+    source_name : str
+        The source's primary identifier.
+    source_surname : str
+        The source's secondary identifier.
+    """
+
+    source_name: str
+    source_surname: str
+    _sql_gold: str
+
+    def __init__(self):
+        """
+        Initialize the LoaderGoldBase class.
+
+        This method sets up a connection to Azure Blob Storage for data storage
+        and retrieval. It installs and loads the DuckDB Azure extension and creates
+        a secret for authentication.
+
+        Raises
+        ------
+        duckdb.IOException
+            If the Azure extension fails to install or load.
+        """
+        env_var = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+
+        # Install and load Azure extension in DuckDB
+        duckdb.sql("INSTALL azure; LOAD azure;")
+        duckdb.sql(
+            f"""
+            CREATE OR REPLACE SECRET secret1 (
+                TYPE azure,
+                CONNECTION_STRING '{env_var}'
+            );
+        """  # nosec
+        )
+
+    def start(self, load_to: Union[str, Path], container: str) -> str:
+        """
+        Execute the data loading process.
+
+        This method:
+        1. Reads data from the Silver layer.
+        2. Create Gold data parquet file.
+
+        Parameters
+        ----------
+        load_to : Union[str, Path]
+            Path to the directory containing the Bronze dataset.
+        container : str
+            Name of the Azure Blob Storage container where the Silver data is stored.
+
+        Returns
+        -------
+        str
+            The file path where the final Gold dataset is stored.
+        """
+        # Defining filename parameters
+        self._load_to: Union[str, Path] = str(load_to)
+        self._container: str = container
+
+        self._file_name_silver: str = (
+            f"silver_{self.source_name}_{self.source_surname}.parquet"
+        )
+        self._file_name_gold: str = (
+            f"gold_{self.source_name}_{self.source_surname}.parquet"
+        )
+        self._file_path_gold: str = f"{self._load_to}/{self._file_name_gold}"
+
+        # Running loader process
+        self._get_sql_gold()
+        df_gold = self._get_data()
+        self._check_data_quality(df_gold)
+        self._load_data(df_gold)
+        return self._file_path_gold
+
+    @abstractmethod
+    def _get_sql_gold(self):
+        """
+        Construct the SQL query to retrieve Silver data.
+
+        This method must be implemented by subclasses to define how data
+        should be extracted from the Silver layer.
+
+        Examples
+        --------
+        Example implementation for extracting Silver data:
+
+        >>> file_silver = (
+        >>>     f"az://{self._container}/"
+        >>>     f"{storage_path('silver', self.source_name)}"
+        >>>     f"{self._file_name}"
+        >>> )
+        >>> self._sql_gold = f"SELECT * FROM read_parquet('{file_silver}')"
+
+        Raises
+        ------
+        NotImplementedError
+            If the subclass does not implement this method.
+        """
+        raise NotImplementedError("Subclasses must implement `_get_query`.")
+
+    def _get_data(self) -> duckdb.DuckDBPyRelation:
+        """
+        Retrieve existing Silver data from Azure storage.
+
+        If the dataset does not exist (e.g., on the first execution), returns `None`.
+
+        Returns
+        -------
+        Union[duckdb.DuckDBPyRelation, None]
+            - A DuckDB relation containing the existing Silver dataset.
+            - `None` if no previous data is found.
+
+        Raises
+        ------
+        duckdb.IOException
+            If the file cannot be accessed or read.
+        """
+        print(self._sql_gold)
+        df_gold = duckdb.sql(self._sql_gold)
+        return df_gold
+
+    @abstractmethod
+    def _check_data_quality(self, df_gold: duckdb.DuckDBPyRelation) -> None:
+        """
+        Perform data quality checks on the Gold dataset.
+
+        Subclasses must implement this method to define validation rules,
+        ensuring that the transformed data meets quality requirements.
+
+        Parameters
+        ----------
+        df_gold : duckdb.DuckDBPyRelation
+            The dataset to be validated.
+
+        Raises
+        ------
+        ValueError
+            If the data fails quality checks.
+        NotImplementedError
+            If the subclass does not implement this method.
+        """
+        raise NotImplementedError("Subclasses must implement `_check_data_quality`.")
+
+    def _load_data(self, df_gold: duckdb.DuckDBPyRelation) -> None:
+        """
+        Write the final Gold layer.
+
+        Saves the transformed data as a Parquet file.
+
+        Parameters
+        ----------
+        df_gold : duckdb.DuckDBPyRelation
+            The final dataset to be stored.
+
+        Raises
+        ------
+        duckdb.IOException
+            If the dataset cannot be written to the destination path.
+        """
+        sql_load: str = (
+            f"COPY df_gold TO '{self._file_path_gold}' (FORMAT parquet);"  # nosec
         )
         duckdb.sql(sql_load)
