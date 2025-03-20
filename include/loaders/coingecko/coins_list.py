@@ -14,7 +14,7 @@ from include.loaders.coingecko.coingecko_base import (
 from include.utils.file_tools import storage_path
 
 
-class CoinGeckoBaseCoinsListSilverLoader(CoinGeckoBaseSilverLoader):
+class CoinGeckoCoinsListSilverLoader(CoinGeckoBaseSilverLoader):
     """
     Loader for transforming CoinGecko Coins List data from Bronze to Silver layer.
 
@@ -30,7 +30,7 @@ class CoinGeckoBaseCoinsListSilverLoader(CoinGeckoBaseSilverLoader):
     source_surname: str = "coins_list"
 
 
-class CoinGeckoBaseCoinsListGoldLoader(CoinGeckoBaseGoldLoader):
+class CoinGeckoCoinsListGoldLoader(CoinGeckoBaseGoldLoader):
     """
     Loader for transforming CoinGecko Coins List data from Bronze to Silver layer.
 
