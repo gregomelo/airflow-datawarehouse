@@ -31,8 +31,8 @@ COINSLIST_TEST_CASES : dict of {str : dict}
 from typing import Any, Dict
 
 from include.loaders.coingecko.coins_list import (
-    CoinGeckoBaseCoinsListGoldLoader,
-    CoinGeckoBaseCoinsListSilverLoader,
+    CoinGeckoCoinsListGoldLoader,
+    CoinGeckoCoinsListSilverLoader,
 )
 from include.transformers.coingecko.coins_list import CoinGeckoCoinsListBronze
 
@@ -40,8 +40,8 @@ from include.transformers.coingecko.coins_list import CoinGeckoCoinsListBronze
 COINSLIST_TEST_CASES: Dict[str, Dict[str, Any]] = {
     "CoinGeckCoinsList": {
         "transformer": CoinGeckoCoinsListBronze,
-        "loader_silver": CoinGeckoBaseCoinsListSilverLoader,
-        "loader_gold": CoinGeckoBaseCoinsListGoldLoader,
+        "loader_silver": CoinGeckoCoinsListSilverLoader,
+        "loader_gold": CoinGeckoCoinsListGoldLoader,
         "test_cases": [
             (
                 "valid_invalid",
