@@ -48,6 +48,7 @@ def coingecko_coinslist():
                 f"include.extractors."
                 f"{source_name}.{source_surname}.{prefix_etl_class}Extractor"
             ),
+            "params_to_query": {"include_platform": "true"},
             "transformer_class": (
                 f"include.transformers."
                 f"{source_name}.{source_surname}.{prefix_etl_class}Bronze"

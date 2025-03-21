@@ -41,10 +41,10 @@ class FullLoadModel(TaskGroup):
     """
     TaskGroup for a full extract, transform, and load (ETL) process.
 
-    This class defines a custom `TaskGroup` in Apache Airflow that automates
-    the ETL workflow for a data source. It dynamically loads extractors,
-    transformers, and loaders based on the parameters set in the preceding
-    task (`setup_params`).
+    This TaskGroup is designed for scalability and defines a custom `TaskGroup`
+    in Apache Airflow that automates the ETL workflow for a data source.
+    It dynamically loads extractors, transformers, and loaders based on the
+    parameters set in the preceding task (`setup_params`).
 
     The ETL process follows a **medallion architecture**:
         - **Bronze**: Extract raw data and store it in a storage layer.
@@ -85,6 +85,7 @@ class FullLoadModel(TaskGroup):
     >>>             "storage_container": "example-container",
     >>>             "storage_client": "include.utils.storage.ExampleStorageClient",
     >>>             "extractor_class": "include.extractors.example.ExampleExtractor",
+    >>>             "params_to_query": {"include_platform": "true"},
     >>>             "transformer_class": "include.transformers.example.ExampleTransformer",
     >>>             "silver_loader_class": "include.loaders.example.ExampleSilverLoader",
     >>>             "gold_loader_class": "include.loaders.example.ExampleGoldLoader",
@@ -102,6 +103,8 @@ class FullLoadModel(TaskGroup):
     - The `setup_params` task must be executed before using this TaskGroup.
     - Extractors, transformers, and loaders must follow the standard
       implementation pattern for this TaskGroup to function correctly.
+    - The params_to_query will be delivered to the extractor class. This
+      dictionary must be passed even if empty.
     """
 
     def __init__(self, group_id, **kwargs):
@@ -132,7 +135,7 @@ class FullLoadModel(TaskGroup):
             extractor_class = getattr(extractor_module, class_name)
 
             data_extractor = extractor_class()
-            params_to_query = {"include_platform": "true"}
+            params_to_query = params["params_to_query"]
             data_extractor.start(params_to_query, load_to_folder)
 
         @task(task_group=self)
